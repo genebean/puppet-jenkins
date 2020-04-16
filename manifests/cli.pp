@@ -23,9 +23,8 @@ class jenkins::cli {
   }
 
   $jar = "${jenkins::libdir}/jenkins-cli.jar"
-  $extract_jar = "jar -xf ${jenkins::libdir}/jenkins.war WEB-INF/jenkins-cli.jar"
-  $move_jar = "mv WEB-INF/jenkins-cli.jar ${jar}"
-  $remove_dir = 'rm -rf WEB-INF'
+  $download_jar = 'wget http://127.0.0.1:${jenkins::port}${jenkins::prefix}/jnlpJars/jenkins-cli.jar -O /tmp/jenkins-cli.jar'
+  $move_jar = "mv /tmp/jenkins-cli.jar ${jar}"
   $cli_tries = $jenkins::cli_tries
   $cli_try_sleep = $jenkins::cli_try_sleep
 
@@ -36,10 +35,11 @@ class jenkins::cli {
     creates => $jar,
   }
   ~> exec { 'jenkins-cli' :
-    command     => "${extract_jar} && ${move_jar} && ${remove_dir}",
+    command     => "${download_jar} && ${move_jar}",
     path        => ['/bin', '/usr/bin'],
     cwd         => '/tmp',
     refreshonly => true,
+    onlyif      => Class['jenkins::service'],
   }
   # Extract latest CLI in case package is updated / downgraded
   Package[$jenkins::package_name] ~> Exec['jenkins-cli']
